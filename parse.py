@@ -37,19 +37,23 @@ def getSchedule(html) -> list[list[str]]:
         y += 1
     return matrix
 
-def getScheduleGroup(group: str) -> list:
+def getScheduleForStudents(group: str) -> list:
+    group = group.upper()
     cursor.execute("SELECT schedule FROM PageData")
     schedule = cursor.fetchone()
-    result = []
+    times, lessons, rooms = [], [], []
     if schedule:
         page = getSchedule(schedule['schedule'])
         for row in range(len(page)):
             for cell in range(len(page[row])):
                 if page[row][cell].text == group:
                     for i in page[row: row + 11]:
-                        result.append(i[cell].text)
-    return result    
-print(getScheduleGroup("ИТ-21"))                
+                        times.append(i[0].text)
+                        lessons.append(i[cell].text)
+                        rooms.append(i[cell + 1].text)
+                        
+    return [times, lessons, rooms]    
+               
 
 
                 
