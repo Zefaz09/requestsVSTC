@@ -3,11 +3,15 @@ from private import connection, cursor
 import time
 import zlib
 from bot_server import bot
+import os
+os.system("python3 -m pip install -r requirements.txt")
 
 def checkUpdates(): 
     try:
         while True: 
-            response = requests.get("http://127.0.0.1:1111")
+            response = requests.get("https://www.vgtk.by/schedule/lessons/day-tomorrow.php")
+            response.encoding = 'utf-8' 
+
             if response.status_code == 200:
                 print("Подключено")
 
@@ -30,7 +34,7 @@ def checkUpdates():
                 else:
                     print("Страница не была обновлена")
 
-            time.sleep(2)
+            time.sleep(1600)
     except Exception as e:
         import traceback
         print("Can`t get data:")

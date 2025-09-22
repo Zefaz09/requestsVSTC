@@ -3,7 +3,7 @@ import telebot
 from telebot import types
 import pymysql
 from private import connection, cursor
-from parse import getScheduleForStudents
+from parse import getScheduleForStudents, getDate
 
 bot = telebot.TeleBot(botToken)
 
@@ -15,6 +15,9 @@ keyboard.add(kb(text="Для студентов", callback_data="students"), kb(
 markup = types.InlineKeyboardMarkup()
 markup.add(types.InlineKeyboardButton("Для студентов", callback_data="students"))
 markup.add(types.InlineKeyboardButton("Для преподавателей", callback_data="teachers"))
+
+studentsMarkup = types.InlineKeyboardMarkup(row_width=1)
+studentsMarkup.add(kb(text="Сегодня", callback_data="today"), kb(text="Завтра", callback_data="tomorrow"), kb(text="Назад", callback_data="back"))
 
 
 def viewSchedule(group):
@@ -61,17 +64,33 @@ def callback_inline(call):
             cursor.execute("SELECT groupName FROM students WHERE chat_id = %s", [call.message.chat.id])
             group = cursor.fetchone()
             if not group:
-                bot.edit_message_text("Пришли имя своей группы", chat_id=call.message.chat.id, message_id=call.message.message_id, reply_markup=markup)
+                bot.edit_message_text("Пришли имя своей группы", chat_id=call.message.chat.id, message_id=call.message.message_id, reply_markup=studentsMarkup)
                 cursor.execute("UPDATE users SET stage = 'getGroup', message_id = %s WHERE chat_id = %s", [call.message.message_id, call.message.chat.id])
                 connection.commit()
             else:
-                bot.edit_message_text(viewSchedule(group['groupName']), chat_id=call.message.chat.id, message_id=call.message.message_id, reply_markup=markup)
+                bot.edit_message_text(viewSchedule(group['groupName']), chat_id=call.message.chat.id, message_id=call.message.message_id, reply_markup=studentsMarkup)
 
                 
                 
         elif call.data == "teachers":
             bot.edit_message_text("Рассписание для преподавателей", chat_id=call.message.chat.id, message_id=call.message.message_id, reply_markup=markup)
 
+        elif call.data == "back":
+            cursor.execute("SELECT stage, message_id FROM users WHERE chat_id = %s", [call.message.chat.id])
+            data = cursor.fetchone()
+            if data:
+                try:
+                    bot.edit_message_reply_markup(chat_id=call.message.chat.id, message_id=data['message_id'], reply_markup=markup)
+                except telebot.apihelper.ApiTelegramException as e:
+                    if "message is not modified" in str(e):
+                        bot.edit_message_reply_markup(chat_id=call.message.chat.id, message_id=data['message_id'], reply_markup=markup)                    
+                    else:
+                        raise  
+
+            
+            
+            
+        
 
 
 print("Бот запущен")
